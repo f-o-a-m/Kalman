@@ -354,10 +354,10 @@ runEKFUpdate
   -> a                   -- ^ Dynamical input \(\boldsymbol{u}_{i-1}\)
   -> (R n, Sym n)        -- ^ Current prediction \(({\boldsymbol{x}}_i^\flat, {\boldsymbol{\Sigma}}_i^\flat)\)
   -> R m                 -- ^ New measurement \(\boldsymbol{y}_i\)
-  -> (R n, Sym n)        -- ^ Updated prediction \((\hat{\boldsymbol{x}}_i, \hat{\boldsymbol{\Sigma}}_i)\)
+  -> (R n, Sym n, R m)   -- ^ Updated prediction \((\hat{\boldsymbol{x}}_i, \hat{\boldsymbol{\Sigma}}_i)\), residual
 
 runEKFUpdate measure linMeas measCov input (predMu, predCov') newMeas =
-  (newMu, newCov)
+  (newMu, newCov, voff)
   where
     newMu  = predMu + kkMat #> voff
     newCov = sym $ predCov - kkMat <> skMat <> tr kkMat
@@ -365,6 +365,7 @@ runEKFUpdate measure linMeas measCov input (predMu, predCov') newMeas =
     predCov = unSym predCov'
 
     lin   = linMeas input predMu
+    -- residual
     voff  = newMeas - measure input predMu
     skMat = lin <> predCov <> tr lin + unSym (measCov input)
     kkMat = predCov <> tr lin <> unsafeInv skMat
@@ -377,7 +378,7 @@ runKFUpdate
   -> a                   -- ^ Dynamical input \(\boldsymbol{u}_{i-1}\)
   -> (R n, Sym n)        -- ^ Current prediction \(({\boldsymbol{x}}_i^\flat, {\boldsymbol{\Sigma}}_i^\flat)\)
   -> R m                 -- ^ New measurement \(\boldsymbol{y}_i\)
-  -> (R n, Sym n)        -- ^ Updated prediction \((\hat{\boldsymbol{x}}_i, \hat{\boldsymbol{\Sigma}}_i)\)
+  -> (R n, Sym n, R m)   -- ^ Updated prediction \((\hat{\boldsymbol{x}}_i, \hat{\boldsymbol{\Sigma}}_i)\)
 runKFUpdate linMeas =
   runEKFUpdate (\inp sys -> linMeas inp sys #> sys) linMeas
 
@@ -400,7 +401,7 @@ runEKF
   -> (R n, Sym n)        -- ^ Current estimate
                          -- \((\hat{\boldsymbol{x}}_{i-1}, \hat{\boldsymbol{\Sigma}}_{i-1})\)
   -> R m                 -- ^ New measurement \(\boldsymbol{y}_i\)
-  -> (R n, Sym n)        -- ^ New (filtered) estimate \((\hat{\boldsymbol{x}}_i, \hat{\boldsymbol{\Sigma}}_i)\)
+  -> (R n, Sym n, R m)   -- ^ New (filtered) estimate \((\hat{\boldsymbol{x}}_i, \hat{\boldsymbol{\Sigma}}_i)\)
 runEKF measure linMeas measCov
   evolve linEvol sysCov
   input estSys newMeas = updatedEstimate
@@ -424,7 +425,7 @@ runKF
   -> (R n, Sym n)        -- ^ Current estimate
                          -- \((\hat{\boldsymbol{x}}_{i-1}, \hat{\boldsymbol{\Sigma}}_{i-1})\)
   -> R m                 -- ^ New measurement \(\boldsymbol{y}_i\)
-  -> (R n, Sym n)        -- ^ New (filtered) estimate \((\hat{\boldsymbol{x}}_i, \hat{\boldsymbol{\Sigma}}_i)\)
+  -> (R n, Sym n, R m)   -- ^ New (filtered) estimate \((\hat{\boldsymbol{x}}_i, \hat{\boldsymbol{\Sigma}}_i)\)
 runKF linMeas measCov
   linEvol sysCov
   input estSys newMeas = updatedEstimate
