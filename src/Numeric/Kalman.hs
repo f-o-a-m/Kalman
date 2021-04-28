@@ -285,6 +285,7 @@ import GHC.TypeLits
 import Numeric.LinearAlgebra.Static
 import Data.Maybe ( fromJust )
 import Prelude hiding ((<>))
+import qualified Debug.Trace as Trace
 
 -- | Given our system model and our previous estimate of the system state,
 -- we generate a prediction of the current system state by taking the
@@ -369,7 +370,8 @@ runEKFUpdate measure linMeas measCov input (predMu, predCov') modF newMeas =
     -- residual
     voff  = modF $ newMeas - measure input predMu
     skMat = lin <> predCov <> tr lin + unSym (measCov input)
-    kkMat = predCov <> tr lin <> unsafeInv skMat
+    skMat' = Trace.trace ("skMat Det: " ++ (show $ det skMat)) skMat
+    kkMat = predCov <> tr lin <> unsafeInv skMat'
 
 
 runKFUpdate
